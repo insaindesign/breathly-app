@@ -4,38 +4,44 @@ import { useAppContext } from "../../context/AppContext";
 import { fontMono, fontLight } from "../../config/fonts";
 import { Stepper } from "./Stepper";
 import { customDurationLimits } from "../../config/customDurationLimits";
+import { steps } from "../../config/steps";
+
+import type { TechniqueSection } from "../../types/Technique";
+import { plural } from "../../utils/plural";
 
 interface Props {
-  durations: number[];
+  sections: TechniqueSection[];
 }
 
-export const TechniquePickerItemCustomization: FC<Props> = ({ durations }) => {
-  const { theme, updateCustomPatternDuration } = useAppContext();
-  const steps = [
-    { id: "inhale", label: "Inhale", value: durations[0] },
-    { id: "afterInhale", label: "Hold", value: durations[1] },
-    { id: "exhale", label: "Exhale", value: durations[2] },
-    { id: "afterExhale", label: "Hold", value: durations[3] },
-  ];
+export const TechniquePickerItemCustomization: FC<Props> = ({ sections }) => {
+  const { theme, updateCustomPatternSection } = useAppContext();
   return (
     <View style={styles.container}>
-      {steps.map(({ id, label, value }, index) => (
-        <View key={id} style={styles.item}>
-          <View style={styles.left}>
-            <Text style={[styles.title, { color: theme.textColor }]}>
-              {label}
-            </Text>
-            <Text style={[styles.subtitle, { color: theme.textColor }]}>
-              {value} seconds
-            </Text>
-          </View>
-          <Stepper
-            onPress={(update: number) =>
-              updateCustomPatternDuration(index, update)
-            }
-            leftDisabled={value <= customDurationLimits[index][0]}
-            rightDisabled={value >= customDurationLimits[index][1]}
-          />
+      {sections.map(({ durations }, sectionIndex) => (
+        <View key={sectionIndex} style={styles.divider}>
+          {steps.map(({ id, label }, index) => (
+            <View key={id} style={styles.item}>
+              <View style={styles.left}>
+                <Text style={[styles.title, { color: theme.textColor }]}>
+                  {label}
+                </Text>
+                <Text style={[styles.subtitle, { color: theme.textColor }]}>
+                  {plural(durations[index], "second", "seconds")}
+                </Text>
+              </View>
+              <Stepper
+                onPress={(value: number) =>
+                  updateCustomPatternSection(sectionIndex, index, value)
+                }
+                leftDisabled={
+                  durations[index] <= customDurationLimits[index][0]
+                }
+                rightDisabled={
+                  durations[index] >= customDurationLimits[index][1]
+                }
+              />
+            </View>
+          ))}
         </View>
       ))}
     </View>
@@ -45,13 +51,16 @@ export const TechniquePickerItemCustomization: FC<Props> = ({ durations }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "column",
-    marginTop: 42,
+    marginTop: 28,
   },
   item: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 18,
+  },
+  divider: {
+    marginVertical: 24,
   },
   left: {},
   title: {

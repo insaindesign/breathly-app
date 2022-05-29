@@ -22,8 +22,7 @@ export const loopAnimations = (
   };
   onStepStart(currentAnimationIndex);
   animateStep();
-  const stopLoop = () => {
+  return () => {
     animations.forEach((animation) => animation.stop());
   };
-  return stopLoop;
 };

@@ -1,11 +1,10 @@
-import React, { FC, useState } from "react";
+import React, { FC, useCallback, useState } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 import KeepAwake from "react-native-keep-awake";
 import { useAppContext } from "../../context/AppContext";
 import { animate } from "../../utils/animate";
-import { buildExerciseSteps } from "../../utils/buildExerciseSteps";
 import { buttonAnimatorContentHeight } from "../ButtonAnimator/ButtonAnimator";
-import { ExerciseCircle } from "./ExerciseCircle";
+import { ExerciseSections } from "./ExerciseSections";
 import { ExerciseComplete } from "./ExerciseComplete";
 import { ExerciseInterlude } from "./ExerciseInterlude";
 import { ExerciseTimer } from "./ExerciseTimer";
@@ -27,7 +26,7 @@ export const Exercise: FC<Props> = () => {
   } = useAppContext();
   const [status, setStatus] = useState<Status>("interlude");
   const [unmountContentAnimVal] = useState(new Animated.Value(1));
-  const steps = buildExerciseSteps(technique.durations);
+  const isInfinite = !technique.sections.find((s) => s.repeat > 0);
 
   const unmountContentAnimation = animate(unmountContentAnimVal, {
     toValue: 0,
@@ -45,14 +44,14 @@ export const Exercise: FC<Props> = () => {
     setStatus("running");
   };
 
-  const handleTimeLimitReached = () => {
+  const handleTimeLimitReached = useCallback(() => {
     unmountContentAnimation.start(({ finished }) => {
       if (finished) {
         if (guidedBreathingMode !== "disabled") playSound("endingBell");
         setStatus("completed");
       }
     });
-  };
+  }, [guidedBreathingMode, unmountContentAnimation]);
 
   const contentAnimatedStyle = {
     opacity: unmountContentAnimVal,
@@ -65,12 +64,15 @@ export const Exercise: FC<Props> = () => {
       )}
       {status === "running" && (
         <Animated.View style={[styles.content, contentAnimatedStyle]}>
-          <ExerciseTimer
-            limit={timerDuration}
-            onLimitReached={handleTimeLimitReached}
-          />
-          <ExerciseCircle
-            steps={steps}
+          {isInfinite ? (
+            <ExerciseTimer
+              limit={timerDuration}
+              onLimitReached={handleTimeLimitReached}
+            />
+          ) : null}
+          <ExerciseSections
+            sections={technique.sections}
+            onComplete={handleTimeLimitReached}
             guidedBreathingMode={guidedBreathingMode}
             vibrationEnabled={stepVibrationFlag}
           />

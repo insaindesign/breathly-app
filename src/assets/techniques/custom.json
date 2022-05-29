@@ -1,7 +1,12 @@
 {
   "id": "custom",
   "name": "Custom",
-  "durations": [4, 2, 6, 2],
+  "sections": [
+    {
+      "repeat": 0,
+      "durations": [4, 2, 6, 2]
+    }
+  ],
   "description": "Create your own pattern.",
   "color": "#FAC175"
 }

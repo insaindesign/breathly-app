@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import { Animated, StyleSheet, Platform } from "react-native";
+import { Animated, StyleSheet } from "react-native";
 import { useAppContext } from "../../context/AppContext";
 import {
   fullSwipeThreshold,
@@ -7,11 +7,14 @@ import {
 } from "./TechniquePickerViewPager";
 import { fontMono, fontLight } from "../../config/fonts";
 
+import type { TechniqueSection } from "../../types/Technique";
+import { plural } from "../../utils/plural";
+
 interface Props {
   panX: Animated.Value;
   position: "prev" | "curr" | "next" | undefined;
   name: string;
-  durations: number[];
+  sections: TechniqueSection[];
   description: string;
 }
 
@@ -19,7 +22,7 @@ export const TechniquePickerItem: FC<Props> = ({
   panX,
   position,
   name,
-  durations,
+  sections,
   description,
   children,
 }) => {
@@ -110,11 +113,15 @@ export const TechniquePickerItem: FC<Props> = ({
           <Animated.Text style={[styles.titleText, { color: theme.textColor }]}>
             {name}
           </Animated.Text>
-          <Animated.Text
-            style={[styles.durationsText, { color: theme.textColor }]}
-          >
-            {durations.join(" - ")}
-          </Animated.Text>
+          {sections.map((s, ii) => (
+            <Animated.Text
+              key={ii}
+              style={[styles.durationsText, { color: theme.textColor }]}
+            >
+              {s.durations.join(" - ")}
+              {s.repeat ? ` - ${plural(s.repeat, "time", "times")}` : null}
+            </Animated.Text>
+          ))}
         </Animated.View>
         <Animated.View style={[styles.description, descriptionAnimatedStyle]}>
           {name !== "Custom" ? (
@@ -138,6 +145,7 @@ const styles = StyleSheet.create({
     left: 0,
     height: "100%",
     paddingHorizontal: 32,
+    paddingBottom: 48,
     width: "100%",
   },
   content: {

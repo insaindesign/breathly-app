@@ -9,15 +9,18 @@ import { Appearance } from "react-native";
 import { produce } from "immer";
 import { darkThemeColors, lightThemeColors } from "../config/themes";
 import {
+  restoreJson,
   restoreString,
   restoreNumber,
   restoreBoolean,
   persistString,
+  persistJson,
   persistNumber,
   persistBoolean,
 } from "../services/storage";
 import { techniques } from "../config/techniques";
-import { GuidedBreathingMode } from "../types/GuidedBreathingMode";
+import type { GuidedBreathingMode } from "../types/GuidedBreathingMode";
+import type { TechniqueSection } from "../types/Technique";
 
 type SystemColorScheme = "no-preference" | "dark" | "light";
 
@@ -30,7 +33,7 @@ type Action =
   | { type: "TOGGLE_FOLLOW_SYSTEM_DARK_MODE" }
   | { type: "TOGGLE_CUSTOM_DARK_MODE" }
   | { type: "TOGGLE_STEP_VIBRATION" }
-  | { type: "SET_CUSTOM_PATTERN_DURATIONS"; payload: number[] };
+  | { type: "SET_CUSTOM_PATTERN_SECTIONS"; payload: TechniqueSection[] };
 
 interface State {
   ready: boolean;
@@ -41,11 +44,12 @@ interface State {
   followSystemDarkModeFlag: boolean;
   guidedBreathingMode: GuidedBreathingMode;
   stepVibrationFlag: boolean;
-  customPatternDurations: number[];
+  customPatternSections: TechniqueSection[];
 }
 
-const initialCustomPatternDurations = techniques.find((x) => x.id === "custom")
-  ?.durations!;
+const initialCustomPatternSections: TechniqueSection[] = techniques.find(
+  (x) => x.id === "custom"
+)?.sections!;
 
 const initialState: State = {
   ready: false,
@@ -56,11 +60,10 @@ const initialState: State = {
   customDarkModeFlag: false,
   guidedBreathingMode: "disabled",
   stepVibrationFlag: false,
-  customPatternDurations: initialCustomPatternDurations,
+  customPatternSections: initialCustomPatternSections,
 };
 
 const reducer = produce((draft: State = initialState, action: Action) => {
-  console.log(action);
   switch (action.type) {
     case "INITIALIZE": {
       return { ...initialState, ...action.payload, ready: true };
@@ -94,8 +97,8 @@ const reducer = produce((draft: State = initialState, action: Action) => {
       draft.guidedBreathingMode = action.payload;
       return;
     }
-    case "SET_CUSTOM_PATTERN_DURATIONS": {
-      draft.customPatternDurations = action.payload;
+    case "SET_CUSTOM_PATTERN_SECTIONS": {
+      draft.customPatternSections = action.payload;
       return;
     }
   }
@@ -152,7 +155,7 @@ export const useAppContext = () => {
       followSystemDarkModeFlag,
       _guidedBreathingMode,
       stepVibrationFlag,
-      customPatternDurationsStr,
+      customPatternSections,
     ] = await Promise.all([
       restoreString("techniqueId", "square"),
       restoreNumber("timerDuration", 0),
@@ -160,10 +163,7 @@ export const useAppContext = () => {
       restoreBoolean("followSystemDarkModeFlag"),
       restoreString("guidedBreathingMode", "disabled"),
       restoreBoolean("stepVibrationFlag"),
-      restoreString(
-        "customPatternDurations",
-        initialCustomPatternDurations.join(",")
-      ),
+      restoreJson("customPatternSections", initialCustomPatternSections),
     ]);
     const colorScheme: SystemColorScheme =
       Appearance.getColorScheme() || "no-preference";
@@ -177,7 +177,7 @@ export const useAppContext = () => {
       followSystemDarkModeFlag,
       guidedBreathingMode,
       stepVibrationFlag,
-      customPatternDurations: customPatternDurationsStr.split(",").map(Number),
+      customPatternSections,
     };
     dispatch({ type: "INITIALIZE", payload: payload });
   };
@@ -216,20 +216,35 @@ export const useAppContext = () => {
     persistBoolean("stepVibrationFlag", !state.stepVibrationFlag);
     dispatch({ type: "TOGGLE_STEP_VIBRATION" });
   };
-  const updateCustomPatternDuration = (index: number, update: number) => {
-    const newCustomPatternDurations = produce(
-      state.customPatternDurations,
+  const updateCustomPatternSection = (
+    sectionIndex: number,
+    stepIndex: number,
+    update: number
+  ) => {
+    const newCustomPatternSections = produce(
+      state.customPatternSections,
       (draft) => {
-        draft[index] += update;
+        draft[sectionIndex].durations[stepIndex] += update;
       }
     );
-    persistString(
-      "customPatternDurations",
-      newCustomPatternDurations.join(",")
-    );
+    persistJson("customPatternSections", newCustomPatternSections);
     dispatch({
-      type: "SET_CUSTOM_PATTERN_DURATIONS",
-      payload: newCustomPatternDurations,
+      type: "SET_CUSTOM_PATTERN_SECTIONS",
+      payload: newCustomPatternSections,
+    });
+  };
+  const addCustomPatternSection = () => {
+    const newCustomPatternSections = produce(
+      state.customPatternSections,
+      (draft) => {
+        const last = draft[draft.length - 1];
+        draft.push({ durations: [...last.durations], repeat: last.repeat });
+      }
+    );
+    persistJson("customPatternSections", newCustomPatternSections);
+    dispatch({
+      type: "SET_CUSTOM_PATTERN_SECTIONS",
+      payload: newCustomPatternSections,
     });
   };
   const technique = getTechnique(state);
@@ -238,10 +253,10 @@ export const useAppContext = () => {
     theme: getTheme(state),
     technique: {
       ...technique,
-      durations:
+      sections:
         technique.id === "custom"
-          ? state.customPatternDurations
-          : technique.durations,
+          ? state.customPatternSections
+          : technique.sections,
     },
     initialize,
     setSystemColorScheme,
@@ -252,6 +267,7 @@ export const useAppContext = () => {
     toggleStepVibration,
     toggleTimer,
     setGuidedBreathingMode,
-    updateCustomPatternDuration,
+    updateCustomPatternSection,
+    addCustomPatternSection,
   };
 };

@@ -1,21 +1,21 @@
-import React, { FC, useState } from "react";
+import React, { FC, useCallback, useEffect, useState } from "react";
 import { Animated, StyleSheet, Platform, Vibration } from "react-native";
 import { deviceWidth } from "../../config/constants";
-import { useOnMount } from "../../hooks/useOnMount";
 import { animate } from "../../utils/animate";
 import {
   interpolateScale,
   interpolateTranslateY,
 } from "../../utils/interpolate";
-import { loopAnimations } from "../../utils/loopAnimations";
 import { ExerciseCircleDots } from "./ExerciseCircleDots";
 import { fontThin } from "../../config/fonts";
 import { playSound } from "../../services/sound";
 import ReactNativeHaptic from "react-native-haptic";
 import { GuidedBreathingMode } from "../../types/GuidedBreathingMode";
 import { Step } from "../../types/Step";
+import { Touchable } from "../../common/Touchable";
 
 type Props = {
+  onComplete: () => void;
   steps: Step[];
   guidedBreathingMode: GuidedBreathingMode;
   vibrationEnabled: boolean;
@@ -23,8 +23,10 @@ type Props = {
 
 const circleSize = deviceWidth * 0.8;
 const fadeInAnimDuration = 400;
+const textDuration = fadeInAnimDuration;
 
 export const ExerciseCircle: FC<Props> = ({
+  onComplete,
   steps,
   guidedBreathingMode,
   vibrationEnabled,
@@ -33,63 +35,66 @@ export const ExerciseCircle: FC<Props> = ({
   const [scaleAnimVal] = useState(new Animated.Value(0));
   const [textAnimVal] = useState(new Animated.Value(1));
   const [circleMinAnimVal] = useState(new Animated.Value(0));
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const activeSteps = steps.filter((x) => !x.skipped);
-  const currentStep = activeSteps[currentStepIndex];
+  const [currentStepIndex, setCurrentStepIndex] = useState<number | null>(null);
+  const currentStep =
+    currentStepIndex !== null ? steps[currentStepIndex] : null;
 
-  const animateStep = (toValue: number, duration: number) => {
-    const textDuration = fadeInAnimDuration;
-    return Animated.stagger(duration - textDuration, [
-      Animated.parallel([
-        animate(scaleAnimVal, {
-          toValue: toValue,
-          duration: duration,
-        }),
+  const animateStep = useCallback(
+    (id: string, duration: number) => {
+      const toValue = id === "inhale" || id === "afterInhale" ? 1 : 0;
+      return Animated.stagger(duration - textDuration, [
+        Animated.parallel([
+          animate(scaleAnimVal, { toValue, duration }),
+          animate(circleMinAnimVal, {
+            toValue,
+            duration: textDuration,
+          }),
+          animate(textAnimVal, {
+            toValue: 1,
+            duration: textDuration,
+          }),
+        ]),
         animate(textAnimVal, {
-          toValue: 1,
+          toValue: 0,
           duration: textDuration,
         }),
-      ]),
-      animate(textAnimVal, {
-        toValue: 0,
-        duration: textDuration,
-      }),
-    ]);
-  };
+      ]);
+    },
+    [circleMinAnimVal, scaleAnimVal, textAnimVal]
+  );
 
-  const showCircleMinAnimation = animate(circleMinAnimVal, {
-    toValue: 1,
-    duration: fadeInAnimDuration,
-  });
+  const incrementStepIndex = useCallback(() => {
+    setCurrentStepIndex(
+      currentStepIndex === null ? 0 : (currentStepIndex + 1) % steps.length
+    );
+  }, [steps, currentStepIndex]);
 
-  const hideCircleMinAnimation = animate(circleMinAnimVal, {
-    toValue: 0,
-    duration: fadeInAnimDuration,
-  });
-
-  const showUpAnimation = animate(showUpAnimVal, {
-    toValue: 1,
-    duration: fadeInAnimDuration,
-  });
-
-  const onStepStart = (stepIndex: number) => {
-    setCurrentStepIndex(stepIndex);
-    const step = activeSteps[stepIndex];
+  useEffect(() => {
+    if (currentStepIndex === null) {
+      return;
+    }
+    if (currentStepIndex === 0) {
+      onComplete();
+    }
+    const step = steps[currentStepIndex];
+    const animation = animateStep(step.id, step.duration);
+    animation.start(({ finished }) => {
+      if (finished) {
+        setCurrentStepIndex((currentStepIndex + 1) % steps.length);
+      }
+    });
     if (step.id === "exhale") {
       if (guidedBreathingMode === "laura") playSound("lauraBreatheOut");
       if (guidedBreathingMode === "paul") playSound("paulBreatheOut");
       if (guidedBreathingMode === "bell") playSound("cueBell1");
-      showCircleMinAnimation.start();
     } else if (step.id === "inhale") {
       if (guidedBreathingMode === "laura") playSound("lauraBreatheIn");
       if (guidedBreathingMode === "paul") playSound("paulBreatheIn");
       if (guidedBreathingMode === "bell") playSound("cueBell1");
-      hideCircleMinAnimation.start();
     } else if (step.id === "afterExhale") {
       if (guidedBreathingMode === "laura") playSound("lauraHold");
       if (guidedBreathingMode === "paul") playSound("paulHold");
       if (guidedBreathingMode === "bell") playSound("cueBell2");
-      hideCircleMinAnimation.start();
     } else if (step.id === "afterInhale") {
       if (guidedBreathingMode === "laura") playSound("lauraHold");
       if (guidedBreathingMode === "paul") playSound("paulHold");
@@ -103,34 +108,28 @@ export const ExerciseCircle: FC<Props> = ({
         Vibration.vibrate(200);
       }
     }
-  };
+    return () => animation.stop();
+    // eslint-disable-next-line react-app/react-hooks/exhaustive-deps
+  }, [
+    currentStepIndex,
+    steps,
+    animateStep,
+    vibrationEnabled,
+    guidedBreathingMode,
+  ]);
 
-  const startAnimationSteps = () => {
-    const createStepAnimations = () =>
-      activeSteps.map((x) =>
-        animateStep(
-          x.id === "inhale" || x.id === "afterInhale" ? 1 : 0,
-          x.duration
-        )
-      );
-    const stopLoop = loopAnimations(createStepAnimations, onStepStart);
-    return stopLoop;
-  };
-
-  useOnMount(() => {
-    let cleanUpAnimationsSteps: () => void;
+  useEffect(() => {
+    const showUpAnimation = animate(showUpAnimVal, {
+      toValue: 1,
+      duration: fadeInAnimDuration,
+    });
     showUpAnimation.start(({ finished }) => {
       if (finished) {
-        cleanUpAnimationsSteps = startAnimationSteps();
+        setCurrentStepIndex(0);
       }
     });
-    return () => {
-      cleanUpAnimationsSteps && cleanUpAnimationsSteps();
-      showUpAnimation.stop();
-      showCircleMinAnimation.stop();
-      hideCircleMinAnimation.stop();
-    };
-  });
+    return () => showUpAnimation.stop();
+  }, [showUpAnimVal]);
 
   const containerAnimatedStyle = {
     opacity: showUpAnimVal.interpolate({
@@ -176,13 +175,15 @@ export const ExerciseCircle: FC<Props> = ({
     <Animated.View style={[styles.container, containerAnimatedStyle]}>
       <Animated.View style={[styles.circle, circleAnimatedStyle]} />
       <Animated.View style={[styles.circleMin, circleMinAnimatedStyle]} />
-      <Animated.View style={styles.circleMax} />
+      <Touchable onPress={incrementStepIndex} style={styles.circleMax}>
+        <Animated.View />
+      </Touchable>
       <Animated.View style={[styles.content, contentAnimatedStyle]}>
-        <Animated.Text style={styles.text}>{currentStep.label}</Animated.Text>
+        <Animated.Text style={styles.text}>{currentStep?.label}</Animated.Text>
         <ExerciseCircleDots
-          visible={currentStep.showDots}
+          visible={currentStep?.showDots}
           numberOfDots={3}
-          totalDuration={currentStep.duration}
+          totalDuration={currentStep?.duration || 0}
         />
       </Animated.View>
     </Animated.View>

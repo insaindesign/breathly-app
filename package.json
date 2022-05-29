@@ -1,5 +1,5 @@
 {
-  "name": "Breathly",
+  "name": "breathly",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -15,13 +15,13 @@
     "studio": "open -a /Applications/Android\\ Studio.app ./android/"
   },
   "dependencies": {
-    "@react-native-community/async-storage": "^1.10.1",
+    "@react-native-async-storage/async-storage": "^1.17.5",
     "immer": "^6.0.5",
     "react": "16.11.0",
     "react-native": "0.62.2",
     "react-native-haptic": "oblador/react-native-haptic#package-cleanup",
     "react-native-keep-awake": "corbt/react-native-keep-awake#146c2db",
-    "react-native-sound": "^0.11.0",
+    "react-native-sound": "^0.11.2",
     "react-native-splash-screen": "^3.2.0"
   },
   "devDependencies": {

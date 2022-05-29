@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-community/async-storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const persistString = async (key: string, value: string) => {
   return await AsyncStorage.setItem(key, value);
@@ -7,6 +7,15 @@ export const persistString = async (key: string, value: string) => {
 export const restoreString = async (key: string, fallback: string) => {
   const value = await AsyncStorage.getItem(key);
   return value != null ? value : fallback;
+};
+
+export const persistJson = async (key: string, value: {}) => {
+  return await persistString(key, JSON.stringify(value));
+};
+
+export const restoreJson = async (key: string, fallback: {}) => {
+  const value = await AsyncStorage.getItem(key);
+  return value ? JSON.parse(value) : fallback;
 };
 
 export const persistNumber = async (key: string, value: number) => {

@@ -226,7 +226,6 @@ export const ButtonAnimator: FC<Props> = ({
         </Touchable>
       </Animated.View>
       <Animated.View
-        pointerEvents="none"
         style={[styles.underlayChildren, underlayChildrenAnimatedStyle]}
       >
         {backVisible && back}
@@ -273,7 +272,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  backContainer: {},
   button: {
     width: buttonSize,
     height: buttonSize,

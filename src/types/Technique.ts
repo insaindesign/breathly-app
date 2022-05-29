@@ -1,7 +1,12 @@
+export interface TechniqueSection {
+  durations: number[];
+  repeat: number;
+}
+
 export interface Technique {
   id: string;
   name: string;
-  durations: number[];
+  sections: [];
   description: string;
   color: string;
 }

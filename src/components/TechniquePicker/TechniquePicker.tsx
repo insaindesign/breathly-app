@@ -25,7 +25,7 @@ export const TechniquePicker: FC<Props> = ({
   onHide,
   onBackButtonPress,
 }) => {
-  const { technique, setTechniqueId, customPatternDurations } = useAppContext();
+  const { technique, setTechniqueId, customPatternSections } = useAppContext();
   const [animatingManually, setAnimatingManually] = useState(false);
   const viewPagerRef = useRef<TechniquePickerViewPagerRef>(null);
   const currentTechniqueIndex = techniques.findIndex(
@@ -84,27 +84,26 @@ export const TechniquePicker: FC<Props> = ({
           onPrevReached={handlePrevReached}
           style={styles.viewPager}
         >
-          {visibleTechniques.map((technique, index) => {
-            const originalTechniqueIndex = techniques.findIndex(
-              (x) => x.id === technique.id
+          {visibleTechniques.map((technique) => {
+            const position = mapIndexToPosition(
+              techniques.findIndex((x) => x.id === technique.id)
             );
-            const position = mapIndexToPosition(originalTechniqueIndex);
             return (
               <TechniquePickerItem
                 key={technique.id}
                 position={position}
                 panX={panX}
                 name={technique.name}
-                durations={
+                sections={
                   technique.id === "custom"
-                    ? customPatternDurations
-                    : technique.durations
+                    ? customPatternSections
+                    : technique.sections
                 }
                 description={technique.description}
               >
                 {technique.id === "custom" ? (
                   <TechniquePickerItemCustomization
-                    durations={customPatternDurations}
+                    sections={customPatternSections}
                   />
                 ) : undefined}
               </TechniquePickerItem>
@@ -161,7 +160,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginHorizontal: 32,
-    marginBottom: 26,
+    marginVertical: 26,
   },
   arrow: {
     width: 20,
