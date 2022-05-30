@@ -24,6 +24,7 @@ type Props = {
 const circleSize = deviceWidth * 0.8;
 const fadeInAnimDuration = 400;
 const textDuration = fadeInAnimDuration;
+const resetDuration = 30;
 
 export const ExerciseCircle: FC<Props> = ({
   onComplete,
@@ -40,24 +41,26 @@ export const ExerciseCircle: FC<Props> = ({
     currentStepIndex !== null ? steps[currentStepIndex] : null;
 
   const animateStep = useCallback(
-    (id: string, duration: number) => {
+    (id: string, stepDuration: number) => {
       const toValue = id === "inhale" || id === "afterInhale" ? 1 : 0;
-      return Animated.stagger(duration - textDuration, [
+      const reset = id === "inhale" || id === "afterExhale" ? 0 : 1;
+      const duration = stepDuration - resetDuration;
+      return Animated.sequence([
         Animated.parallel([
-          animate(scaleAnimVal, { toValue, duration }),
+          animate(scaleAnimVal, { toValue: reset, duration: resetDuration }),
           animate(circleMinAnimVal, {
-            toValue,
-            duration: textDuration,
-          }),
-          animate(textAnimVal, {
-            toValue: 1,
-            duration: textDuration,
+            toValue: reset,
+            duration: resetDuration,
           }),
         ]),
-        animate(textAnimVal, {
-          toValue: 0,
-          duration: textDuration,
-        }),
+        Animated.stagger(duration - textDuration, [
+          Animated.parallel([
+            animate(scaleAnimVal, { toValue, duration }),
+            animate(circleMinAnimVal, { toValue, duration: textDuration }),
+            animate(textAnimVal, { toValue: 1, duration: textDuration }),
+          ]),
+          animate(textAnimVal, { toValue: 0, duration: textDuration }),
+        ]),
       ]);
     },
     [circleMinAnimVal, scaleAnimVal, textAnimVal]
