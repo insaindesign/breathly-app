@@ -18,11 +18,14 @@ export const restoreJson = async (key: string, fallback: {}) => {
   return value ? JSON.parse(value) : fallback;
 };
 
-export const persistNumber = async (key: string, value: number) => {
+export const persistNumber = async (key: string, value: number | null) => {
+  if (value === null) {
+    return await AsyncStorage.removeItem(key);
+  }
   return await AsyncStorage.setItem(key, value.toString());
 };
 
-export const restoreNumber = async (key: string, fallback: number) => {
+export const restoreNumber = async <T>(key: string, fallback: number | T) => {
   const value = await AsyncStorage.getItem(key);
   return value != null ? Number(value) : fallback;
 };

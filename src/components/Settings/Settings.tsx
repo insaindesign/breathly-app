@@ -7,6 +7,7 @@ import { SettingsSection } from "./SettingsSection";
 import { SettingsItemRadio } from "./SettingsItemRadio";
 import { GuidedBreathingMode } from "../../types/GuidedBreathingMode";
 import { SettingsItemMinutesInput } from "./SettingsItemMinutesInput";
+import { SettingsItemClockInput } from "./SettingsItemClockInput";
 
 interface Props {
   visible: boolean;
@@ -21,6 +22,7 @@ export const Settings: FC<Props> = ({ visible, onHide, onBackButtonPress }) => {
     customDarkModeFlag,
     guidedBreathingMode,
     timerDuration,
+    notification,
     toggleTimer,
     setTimerDuration,
     stepVibrationFlag,
@@ -28,6 +30,7 @@ export const Settings: FC<Props> = ({ visible, onHide, onBackButtonPress }) => {
     toggleCustomDarkMode,
     toggleFollowSystemDarkMode,
     setGuidedBreathingMode,
+    setNotification,
     toggleStepVibration,
   } = useAppContext();
 
@@ -98,6 +101,31 @@ export const Settings: FC<Props> = ({ visible, onHide, onBackButtonPress }) => {
               }}
             />
           )}
+        </SettingsSection>
+        <SettingsSection label={"Notifications"}>
+          <SettingsItemSwitch
+            label="Enable daily reminder"
+            color={theme.mainColor}
+            value={notification !== null}
+            onValueChange={(val) => {
+              LayoutAnimation.configureNext(
+                LayoutAnimation.Presets.easeInEaseOut
+              );
+              setNotification(val ? 450 : null);
+            }}
+          />
+          {notification !== null ? (
+            <SettingsItemClockInput
+              label="Reminder time"
+              value={notification}
+              onValueChange={(value) => {
+                LayoutAnimation.configureNext(
+                  LayoutAnimation.Presets.easeInEaseOut
+                );
+                setNotification(value);
+              }}
+            />
+          ) : null}
         </SettingsSection>
         <SettingsSection label={"Vibration"}>
           <SettingsItemSwitch

@@ -18,6 +18,7 @@ import {
   persistNumber,
   persistBoolean,
 } from "../services/storage";
+import { modifyNotifications } from "../services/notification";
 import { techniques } from "../config/techniques";
 import type { GuidedBreathingMode } from "../types/GuidedBreathingMode";
 import type { TechniqueSection } from "../types/Technique";
@@ -30,6 +31,7 @@ type Action =
   | { type: "SET_TECHNIQUE_ID"; payload: string }
   | { type: "SET_TIMER_DURATION"; payload: number }
   | { type: "SET_GUIDED_BREATHING_MODE"; payload: GuidedBreathingMode }
+  | { type: "SET_NOTIFICATION"; payload: number | null }
   | { type: "TOGGLE_FOLLOW_SYSTEM_DARK_MODE" }
   | { type: "TOGGLE_CUSTOM_DARK_MODE" }
   | { type: "TOGGLE_STEP_VIBRATION" }
@@ -43,6 +45,7 @@ interface State {
   customDarkModeFlag: boolean;
   followSystemDarkModeFlag: boolean;
   guidedBreathingMode: GuidedBreathingMode;
+  notification: any;
   stepVibrationFlag: boolean;
   customPatternSections: TechniqueSection[];
 }
@@ -59,6 +62,7 @@ const initialState: State = {
   followSystemDarkModeFlag: false,
   customDarkModeFlag: false,
   guidedBreathingMode: "disabled",
+  notification: null,
   stepVibrationFlag: false,
   customPatternSections: initialCustomPatternSections,
 };
@@ -95,6 +99,11 @@ const reducer = produce((draft: State = initialState, action: Action) => {
     }
     case "SET_GUIDED_BREATHING_MODE": {
       draft.guidedBreathingMode = action.payload;
+      return;
+    }
+    case "SET_NOTIFICATION": {
+      draft.notification = action.payload;
+      modifyNotifications(action.payload);
       return;
     }
     case "SET_CUSTOM_PATTERN_SECTIONS": {
@@ -153,7 +162,8 @@ export const useAppContext = () => {
       timerDuration,
       customDarkModeFlag,
       followSystemDarkModeFlag,
-      _guidedBreathingMode,
+      guidedBreathingMode,
+      notification,
       stepVibrationFlag,
       customPatternSections,
     ] = await Promise.all([
@@ -162,12 +172,12 @@ export const useAppContext = () => {
       restoreBoolean("customDarkModeFlag"),
       restoreBoolean("followSystemDarkModeFlag"),
       restoreString("guidedBreathingMode", "disabled"),
+      restoreNumber("notification", null),
       restoreBoolean("stepVibrationFlag"),
       restoreJson("customPatternSections", initialCustomPatternSections),
     ]);
     const colorScheme: SystemColorScheme =
       Appearance.getColorScheme() || "no-preference";
-    const guidedBreathingMode = _guidedBreathingMode as GuidedBreathingMode;
     const payload = {
       ...initialState,
       systemColorScheme: colorScheme,
@@ -175,7 +185,8 @@ export const useAppContext = () => {
       timerDuration,
       customDarkModeFlag,
       followSystemDarkModeFlag,
-      guidedBreathingMode,
+      notification,
+      guidedBreathingMode: guidedBreathingMode as GuidedBreathingMode,
       stepVibrationFlag,
       customPatternSections,
     };
@@ -210,6 +221,13 @@ export const useAppContext = () => {
     dispatch({
       type: "SET_GUIDED_BREATHING_MODE",
       payload: guidedBreathingMode,
+    });
+  };
+  const setNotification = (notification: number | null) => {
+    persistNumber("notification", notification);
+    dispatch({
+      type: "SET_NOTIFICATION",
+      payload: notification,
     });
   };
   const toggleStepVibration = () => {
@@ -267,6 +285,7 @@ export const useAppContext = () => {
     toggleStepVibration,
     toggleTimer,
     setGuidedBreathingMode,
+    setNotification,
     updateCustomPatternSection,
     addCustomPatternSection,
   };
