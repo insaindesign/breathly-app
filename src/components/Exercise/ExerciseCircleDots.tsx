@@ -1,13 +1,12 @@
-import React, { FC, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import { Animated, StyleSheet } from "react-native";
-import { useOnMount } from "../../hooks/useOnMount";
-import { useOnUpdate } from "../../hooks/useOnUpdate";
 import { animate } from "../../utils/animate";
 import { interpolateScale } from "../../utils/interpolate";
 import { times } from "../../utils/times";
 
 const dotSize = Math.floor(4);
 const fadeInAnimDuration = 400;
+const duration = fadeInAnimDuration;
 
 type Props = {
   visible?: boolean;
@@ -20,62 +19,51 @@ export const ExerciseCircleDots: FC<Props> = ({
   numberOfDots,
   totalDuration,
 }) => {
-  const [dotAnimVals] = useState(
-    times(numberOfDots).map(() => new Animated.Value(0))
-  );
+  const [dotAnimVals, setDotAnimVals] = useState<Animated.Value[]>([]);
 
-  const delayDuration = Math.floor(
-    totalDuration / numberOfDots - fadeInAnimDuration
-  );
-
-  const createDotAnimation = (index: number) => {
-    return animate(dotAnimVals[index], {
-      toValue: 1,
-      duration: fadeInAnimDuration,
-    });
-  };
-  const sequenceAnimations: Animated.CompositeAnimation[] = [];
-  times(numberOfDots).forEach((index) => {
-    sequenceAnimations.push(createDotAnimation(index));
-    sequenceAnimations.push(Animated.delay(delayDuration));
-  });
-  const resetDotsAnimVals = () => dotAnimVals.forEach((val) => val.setValue(0));
-  const dotsAnimation = Animated.sequence(sequenceAnimations);
-
-  useOnMount(() => {
-    if (visible) {
-      dotsAnimation.start(resetDotsAnimVals);
+  useEffect(() => {
+    if (!visible) {
+      setDotAnimVals([]);
+      return;
     }
+    const delayDuration = Math.floor(totalDuration / numberOfDots - duration);
+    const animVals: Animated.Value[] = [];
+    const animations: Animated.CompositeAnimation[] = [];
+    times(numberOfDots).forEach(() => {
+      const animVal = new Animated.Value(0);
+      animVals.push(animVal);
+      animations.push(animate(animVal, { toValue: 1, duration }));
+      animations.push(Animated.delay(delayDuration));
+    });
+    setDotAnimVals(animVals);
+    const dotsAnimation = Animated.sequence(animations);
+    dotsAnimation.start();
     return () => {
+      animVals.forEach((val) => val.setValue(0));
       dotsAnimation.stop();
     };
-  });
-
-  useOnUpdate((prevVisible) => {
-    if (!prevVisible && visible) {
-      dotsAnimation.start(resetDotsAnimVals);
-    }
-  }, visible);
-
-  const dotsAnimatedStyles = dotAnimVals.map((val) => ({
-    opacity: val.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 1],
-    }),
-    transform: [
-      interpolateScale(val, {
-        inputRange: [0, 1],
-        outputRange: [0, 1],
-      }),
-    ],
-  }));
+  }, [numberOfDots, visible, totalDuration]);
 
   return (
     <Animated.View style={[styles.container]}>
-      {times(numberOfDots).map((index) => (
+      {dotAnimVals.map((val, index) => (
         <Animated.View
           key={`dot_${index}`}
-          style={[styles.dot, dotsAnimatedStyles[index]]}
+          style={[
+            styles.dot,
+            {
+              opacity: val.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 1],
+              }),
+              transform: [
+                interpolateScale(val, {
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                }),
+              ],
+            },
+          ]}
         />
       ))}
     </Animated.View>
