@@ -49,11 +49,7 @@ export const checkBatteryOptimisation = async (disable: () => void) => {
 };
 
 export const modifyNotifications = async (notifSetting: number | null) => {
-  const current = await notifee.getTriggerNotificationIds();
-  if (current.length) {
-    await notifee.cancelTriggerNotifications();
-  }
-
+  await notifee.cancelTriggerNotifications();
   if (notifSetting === null) {
     return;
   }
