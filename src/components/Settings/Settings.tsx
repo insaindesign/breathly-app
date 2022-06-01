@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useEffect } from "react";
 import { StyleSheet, LayoutAnimation, ScrollView } from "react-native";
 import { useAppContext } from "../../context/AppContext";
 import { PageContainer } from "../PageContainer/PageContainer";
@@ -8,6 +8,10 @@ import { SettingsItemRadio } from "./SettingsItemRadio";
 import { GuidedBreathingMode } from "../../types/GuidedBreathingMode";
 import { SettingsItemMinutesInput } from "./SettingsItemMinutesInput";
 import { SettingsItemClockInput } from "./SettingsItemClockInput";
+import {
+  checkBatteryOptimisation,
+  checkPowerOptimisation,
+} from "../../services/notification";
 
 interface Props {
   visible: boolean;
@@ -43,6 +47,18 @@ export const Settings: FC<Props> = ({ visible, onHide, onBackButtonPress }) => {
     { value: "paul", label: "Paul's voice" },
     { value: "bell", label: "Bell cue" },
   ];
+
+  useEffect(() => {
+    if (!notification) {
+      return;
+    }
+    const disable = () => setNotification(null);
+    checkPowerOptimisation(disable).then((power) => {
+      if (power) {
+        checkBatteryOptimisation(disable);
+      }
+    });
+  }, [notification, setNotification]);
 
   return (
     <PageContainer
