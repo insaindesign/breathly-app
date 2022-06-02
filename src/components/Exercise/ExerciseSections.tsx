@@ -51,8 +51,12 @@ export const ExerciseSections: FC<Props> = ({
         {section.durations.join(" - ")}
         {section.repeat > 1 ? ` - ${iterations} / ${section.repeat}` : null}
       </Text>
+      {section.manual ? (
+        <Text style={[styles.manualText]}>Press and hold during inhale</Text>
+      ) : null}
       <ExerciseCircle
         steps={steps}
+        manualBreath={Boolean(section.manual)}
         onComplete={onSectionComplete}
         guidedBreathingMode={guidedBreathingMode}
         vibrationEnabled={vibrationEnabled}
@@ -70,7 +74,13 @@ const styles = StyleSheet.create({
   durationsText: {
     color: "white",
     fontSize: 30,
-    marginVertical: 24,
+    marginTop: 32,
+    ...fontMono,
+  },
+  manualText: {
+    color: "white",
+    fontSize: 18,
+    marginBottom: 12,
     ...fontMono,
   },
 });

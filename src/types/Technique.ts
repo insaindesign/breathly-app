@@ -1,5 +1,6 @@
 export interface TechniqueSection {
   durations: number[];
+  manual?: boolean;
   repeat: number;
 }
 

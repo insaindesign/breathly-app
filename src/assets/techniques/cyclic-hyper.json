@@ -4,6 +4,7 @@
   "sections": [
     {
       "repeat": 30,
+      "manual": true,
       "durations": [2, 0, 1, 0]
     },
     {
@@ -12,6 +13,7 @@
     },
     {
       "repeat": 30,
+      "manual": true,
       "durations": [2, 0, 1, 0]
     },
     {
@@ -20,11 +22,16 @@
     },
     {
       "repeat": 30,
+      "manual": true,
       "durations": [2, 0, 1, 0]
     },
     {
       "repeat": 1,
       "durations": [0, 0, 10, 60]
+    },
+    {
+      "repeat": 1,
+      "durations": [30, 60, 0, 0]
     }
   ],
   "description": "Cyclic Hyperventilation can boost your immune system and increase your stress tolerance. Deep inhale in through nose, fast short exhale out.",
